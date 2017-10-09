@@ -1,11 +1,12 @@
 # **Finding Lane Lines on the Road** 
 
 Yangchun Luo
+
 Oct 8, 2017
 
 This is the assignment for Udacity's Self-Driving Car Term 1 Project 1.
 
-This replaces the original [README.md](README-orig.md)
+This replaces the original [README.md](README-orig.md).
 
 ---
 The goals / steps of this project are the following:
@@ -38,26 +39,24 @@ This mis-classification is quite costly when later fitting the line. I changed t
 
 **Fitting**: After clustering, I put all the vertices in x, y arrays and use linear regression to fit a line. As mentioned above, this turned out to be quite sensitive to outliers. One source of outliers came from mis-classification. Another source came from "noise" line detected by previous steps. 
 
-I employed per sample (vertice) weight to migitate the problem. Each sample (x,y) pair's weight is determined by the following way:
+I employed per sample (vertice) weight to migitate the problem. Each sample (x, y) pair's weight is determined by the following way:
 - it is proportional to the length of its line. That is, longer lines has higher weights.
-- it is inversely proportional to its Eclidean distance from the average of the Hough space of (slope and intercept). That is, if a pair is very different from the mass of the cluster, it will receive little weight.
+- it is inversely proportional to its Eclidean distance from the average of the Hough space of (slope, intercept). That is, if a pair is very different from the mass of the cluster, it will receive little weight.
 - if the slope is outside an *empirical* range, the weight is set to 0. This may not generate well in other video setups.
-- if the x coordinate is 1.5 stdDev away from the cluster average, the weight is set to 0. This is based on the observation that the two lines can be easily separated by x coordinate.
+- if the x coordinate is 1.5 stdDev away from the cluster average, the weight is set to 0. This is based on the observation that the two lines are easily separatable by x coordinate.
 
 The last two points are to deal with outliers. In this following example, the regressed line for left lane is off due to part of the right lane being mis-classified.
 
-<img src="examples/outlier-and-regression.jpg" alt="Outlier Image" style="width: 50px;"/>
+<img src="examples/outlier-and-regression.jpg" alt="Outlier Image" width=350 />
 
 ### 2. Identify potential shortcomings with your current pipeline
 
 The approached used for clustering and line fitting has a lot of assumptions about this particular setup baked in. The method does not generate well in other situations, for example, when camera is mounted in a different location. Also, the statically defined region of interest can suffer from the same issue.
 
-While the etrapolation code works okay in most cases, it does not work well in the challenge where the lane region contains shade.
-
+While the extrapolation code works okay in most cases, it does not work well in the challenge video where the lane region contains many shades.
 
 ### 3. Suggest possible improvements to your pipeline
 
-A possible improvement would be to find the region of interest using CNN-based approach through training. But this is a topic beyond the scope of this project.
+A possible improvement would be to find the region of interest using CNN-based approach through some training. But this is a topic beyond the scope of this project.
 
-To represent a line, I used (slope, intercept) and added some numerical stability. But both may suffer from high variance: a tiny little change in slope and result in a large change in intercept, given a point. A better may be to use (rho, theta) based representation. This may improve the KMeans cluster result, which I did not have time to explore.
-
+To represent a line, I used (slope, intercept) and added some numerical stability. But both may suffer from high variance: a tiny little change in slope and result in a large change in intercept, given a vertex the line must pass. A better way may be to use (rho, theta) based representation. This may improve the KMeans cluster result, which I did not have time to explore.
