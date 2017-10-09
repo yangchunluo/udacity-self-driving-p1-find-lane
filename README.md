@@ -1,56 +1,62 @@
 # **Finding Lane Lines on the Road** 
-[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-<img src="examples/laneLines_thirdPass.jpg" width="480" alt="Combined Image" />
+Yangchun Luo
 
-Overview
+Oct 8, 2017
+
+This is the assignment for Udacity's Self-Driving Car Term 1 Project 1.
+
+This replaces the original [README.md](README-orig.md).
+
+---
+The goals / steps of this project are the following:
+* Make a pipeline that finds lane lines on the road
+* Reflect on your work in a written report
 ---
 
-When we drive, we use our eyes to decide where to go.  The lines on the road that show us where the lanes are act as our constant reference for where to steer the vehicle.  Naturally, one of the first things we would like to do in developing a self-driving car is to automatically detect lane lines using an algorithm.
+### Reflection
 
-In this project you will detect lane lines in images using Python and OpenCV.  OpenCV means "Open-Source Computer Vision", which is a package that has many useful tools for analyzing images.  
+### 1. Describe your pipeline. As part of the description, explain how you modified the draw_lines() function.
 
-To complete the project, two files will be submitted: a file containing project code and a file containing a brief write up explaining your solution. We have included template files to be used both for the [code](https://github.com/udacity/CarND-LaneLines-P1/blob/master/P1.ipynb) and the [writeup](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md).The code file is called P1.ipynb and the writeup template is writeup_template.md 
+My image processing pipeline has the following parts:
+1. Convert the raw image to grayscale.
+2. Apply Gaussian blur with kernel size 3.
+3. Use Canny algorithm to detect edges, with the low and high threshold 50 and 150.
+4. Mask the image with a region of interest, given that the camera is amount in a fixed position so the lane marking should be in a stable region in a recording.
+5. Find lines in above region using Hough transformation. The parameters are borrowed from previous quizes.
 
-To meet specifications in the project, take a look at the requirements in the [project rubric](https://review.udacity.com/#!/rubrics/322/view)
+In order to draw a single line on the left and right lanes, I made the following modification:
+1. Instead of directly drawing lines in the hough transformation function, I separate draw_lines() from hough_lines().
+2. hough_lines() returns a list of detected lines, which feeds into a new function extrapolate_lines().
+3. extrapolate_lines() does two main things:  clustering the lines into two clusters and for each cluster, get the fitted line parameters (slope, intercept).
+4. The output of extrapolate_lines (two: left and right) is used to plot given the width of the image. It is later cropped/masked by the previously defined region of interest. In this way, we can extend the lines in the region only.
 
+Here I will explain the two main components in extrapolate_lines().
 
-Creating a Great Writeup
----
-For this project, a great writeup should provide a detailed response to the "Reflection" section of the [project rubric](https://review.udacity.com/#!/rubrics/322/view). There are three parts to the reflection:
+**Clustering**: I first tried KMeans to make two clusters. For each line (x1,y1,x2,y2), I generate slope and intercept. I added 1e-6 to the denominator for numerical stability. I used slope only to do clustering. This, however, can suffer from mis-classification. I've seen cases where certain parts of the left lane is clustered to be part of the right lane, due to the previous step finding a line with a very different slope in left lane.
 
-1. Describe the pipeline
+This mis-classification is quite costly when later fitting the line. I changed the clustering to simply use slope > 0 and slope < 0, given the unique shape in this project. This may not generate to other video setup, but simply and worked okay for this project.
 
-2. Identify any shortcomings
+**Fitting**: After clustering, I put all the vertices in x, y arrays and use linear regression to fit a line. As mentioned above, this turned out to be quite sensitive to outliers. One source of outliers came from mis-classification. Another source came from "noise" line detected by previous steps. 
 
-3. Suggest possible improvements
+I employed per sample (vertice) weight to migitate the problem. Each sample (x, y) pair's weight is determined by the following way:
+- it is proportional to the length of its line. That is, longer lines has higher weights.
+- it is inversely proportional to its Eclidean distance from the average of the Hough space of (slope, intercept). That is, if a pair is very different from the mass of the cluster, it will receive little weight.
+- if the slope is outside an *empirical* range, the weight is set to 0. This may not generate well in other video setups.
+- if the x coordinate is 1.5 stdDev away from the cluster average, the weight is set to 0. This is based on the observation that the two lines are easily separatable by x coordinate.
 
-We encourage using images in your writeup to demonstrate how your pipeline works.  
+The last two points are to deal with outliers. In this following example, the regressed line for left lane is off due to part of the right lane being mis-classified.
 
-All that said, please be concise!  We're not looking for you to write a book here: just a brief description.
+<img src="examples/outlier-and-regression.jpg" alt="Outlier Image" width=350 />
 
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup. Here is a link to a [writeup template file](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md). 
+### 2. Identify potential shortcomings with your current pipeline
 
+The approached used for clustering and line fitting has a lot of assumptions about this particular setup baked in. The method does not generate well in other situations, for example, when camera is mounted in a different location. Also, the statically defined region of interest can suffer from the same issue.
 
-The Project
----
+While the extrapolation code works okay in most cases, it does not work well in the challenge video where the lane region contains many shades.
 
-## If you have already installed the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) you should be good to go!   If not, you should install the starter kit to get started on this project. ##
+### 3. Suggest possible improvements to your pipeline
 
-**Step 1:** Set up the [CarND Term1 Starter Kit](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/83ec35ee-1e02-48a5-bdb7-d244bd47c2dc/lessons/8c82408b-a217-4d09-b81d-1bda4c6380ef/concepts/4f1870e0-3849-43e4-b670-12e6f2d4b7a7) if you haven't already.
+A possible improvement would be to find the region of interest using CNN-based approach through some training. But this is a topic beyond the scope of this project.
 
-**Step 2:** Open the code in a Jupyter Notebook
-
-You will complete the project code in a Jupyter notebook.  If you are unfamiliar with Jupyter Notebooks, check out <A HREF="https://www.packtpub.com/books/content/basics-jupyter-notebook-and-python" target="_blank">Cyrille Rossant's Basics of Jupyter Notebook and Python</A> to get started.
-
-Jupyter is an Ipython notebook where you can run blocks of code and see results interactively.  All the code for this project is contained in a Jupyter notebook. To start Jupyter in your browser, use terminal to navigate to your project directory and then run the following command at the terminal prompt (be sure you've activated your Python 3 carnd-term1 environment as described in the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) installation instructions!):
-
-`> jupyter notebook`
-
-A browser window will appear showing the contents of the current directory.  Click on the file called "P1.ipynb".  Another browser window will appear displaying the notebook.  Follow the instructions in the notebook to complete the project.  
-
-**Step 3:** Complete the project and submit both the Ipython notebook and the project writeup
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
-
+To represent a line, I used (slope, intercept) and added some numerical stability. But both may suffer from high variance: a tiny little change in slope and result in a large change in intercept, given a vertex the line must pass. A better way may be to use (rho, theta) based representation. This may improve the KMeans cluster result, which I did not have time to explore.
