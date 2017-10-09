@@ -5,13 +5,12 @@ Oct 8, 2017
 
 This is the assignment for Udacity's Self-Driving Car Term 1 Project 1.
 
-This replaces the original [README.md](https://github.com/yangchunluo/udacity-self-driving-p1-find-lane/blob/master/README-orig.md)
+This replaces the original [README.md](README-orig.md)
 
 ---
 The goals / steps of this project are the following:
 * Make a pipeline that finds lane lines on the road
 * Reflect on your work in a written report
-[outlier-image] 'examples/outlier-and-regression.jpg'
 ---
 
 ### Reflection
@@ -47,7 +46,7 @@ I employed per sample (vertice) weight to migitate the problem. Each sample (x,y
 
 The last two points are to deal with outliers. In this following example, the regressed line for left lane is off due to part of the right lane being mis-classified.
 
-[outlier-image]
+<img src="examples/outlier-and-regression.jpg" alt="Outlier Image" style="width: 50px;"/>
 
 ### 2. Identify potential shortcomings with your current pipeline
 
